@@ -15,6 +15,8 @@
 
 - http://gleamly.com/article/introduction-kademlia-dht-how-it-works
 
+- https://medium.com/paratii/a-brief-history-of-p2p-content-distribution-in-10-major-steps-6d6733d25122
+
 ## Links da wikipedia sobre redes P2P usadas (como Gnutella, BitTorrent). Falam sobre possíveis uso de DHTs
 - https://en.wikipedia.org/wiki/Peer-to-peer_file_sharing
 - https://en.wikipedia.org/wiki/Gnutella2
@@ -23,3 +25,4 @@
 - https://en.wikipedia.org/wiki/BitTorrent
 - https://en.wikipedia.org/wiki/Mainline_DHT
 - https://en.wikipedia.org/wiki/Gnutella
+- https://en.wikipedia.org/wiki/Distributed_hash_table
