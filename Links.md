@@ -14,3 +14,12 @@
     - fala um pouco sobre o processo de junção à rede na primeira resposta
 
 - http://gleamly.com/article/introduction-kademlia-dht-how-it-works
+
+## Links da wikipedia sobre redes P2P usadas (como Gnutella, BitTorrent). Falam sobre possíveis uso de DHTs
+- https://en.wikipedia.org/wiki/Peer-to-peer_file_sharing
+- https://en.wikipedia.org/wiki/Gnutella2
+- https://en.wikipedia.org/wiki/Darknet
+- https://en.wikipedia.org/wiki/Freenet
+- https://en.wikipedia.org/wiki/BitTorrent
+- https://en.wikipedia.org/wiki/Mainline_DHT
+- https://en.wikipedia.org/wiki/Gnutella

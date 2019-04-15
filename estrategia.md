@@ -12,3 +12,11 @@
 
 - Hierarquia de subscrição 
 - Gerida pela distância (xor)
+
+## Nova estratégia
+
+1. Temos uma rede por baixo
+2. Em cima fazemos um sistema hierarquico de subscrições
+    1. s
+    2. s
+    3. s
