@@ -15,8 +15,7 @@
 
 ## Nova estratégia
 
-1. Temos uma rede por baixo
-2. Em cima fazemos um sistema hierarquico de subscrições
-    1. s
-    2. s
-    3. s
+- Usar especie de gossip em que dizemos aos nós mais proximos quais são os nós que faltam
+    - tentar ver a quais nos vamos conectar (ver um número sufuciente que garanta a entrega da mensagem)
+    - até podemos fazer testes baseados em grafos e ver tbm o número de rondas médio
+- Guardar na DHT ip, porta, id de no, followers e following ( em que nó vai ficar guardado?)
