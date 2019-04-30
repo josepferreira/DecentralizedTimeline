@@ -4,21 +4,24 @@ import kademlia.routing.KademliaRoutingTable;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.UUID;
 
 public class Bootstrap {
 
 
     public static void main(String[] args) {
         try {
-            JKademliaNode kad1 = new JKademliaNode("Node1", new KademliaId("ASF45678947584567467"), 7574);
-            JKademliaNode kad2 = new JKademliaNode("Node2", new KademliaId("ASERTKJDHGVHERJHGFLK"), 7572);
+            String a = (String) UUID.randomUUID().toString();
+            System.out.println(a);
+            JKademliaNode kad1 = new JKademliaNode("Node1", new KademliaId(a), 7574);
+            JKademliaNode kad2 = new JKademliaNode("Node2", new KademliaId("ASERTKJDHGVHERJHGFLK"), 7570);
 
             System.out.println(kad1.getRoutingTable().getAllNodes());
             System.out.println(kad2.getRoutingTable().getAllNodes());
 
             KademliaId id = new KademliaId("ASERTKJDHGVHERJHGFLK");
             InetAddress ip = InetAddress.getByName("localhost");
-            Node kadi2 = new Node(id,ip,7572);
+            Node kadi2 = new Node(id,ip,7570);
             kad1.bootstrap(kadi2);
 
             System.out.println("Acabou");

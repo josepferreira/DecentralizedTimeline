@@ -9,7 +9,7 @@ public class Nodo {
     public static void main(String[] args) throws IOException {
 
         for(int i = 11; i<100; i++) {
-            JKademliaNode kad1 = new JKademliaNode("Node"+i, new KademliaId("FSF45678MA7584567Q"+i), 7600+i);
+            JKademliaNode kad1 = new JKademliaNode("Node"+i, new KademliaId("FSF45678MA7584567A"+i), 7600+i);
 
 
             KademliaId id = new KademliaId("ASERTKJDHGVHERJHGFLK");
