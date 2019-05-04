@@ -79,10 +79,10 @@ def testeGossipMedia(n,tentativas=100):
 
 rondas = []
 msgs = []
-x = [i for i in range(4999,5000)]
+x = [i for i in range(1000000,1000001)]
 for i in x:
     print(i)
-    (r,m) = testeGossipMedia(i,1000)
+    (r,m) = testeGossipMedia(i,1)
     rondas.append(r)
     msgs.append(m)
 print('Rondas: ' , rondas)
