@@ -112,15 +112,43 @@ def mostra_timeline():
     menu.clear()
     return False
 
+## Para mandar mensagens
+
+async def escreve_timeline_utilizadores(msg):
+    utilizador = await server.get(username)
+    seguidores = json.loads(utilizador)
+    print('LALALALLALALALALALA\n\n\n\n\n\n\n')
+    print(seguidores)
+
+    if seguidores is None:
+        print('ERRO: O utilizador ', username, ' não está na DHT ...')
+        return
+    else:
+        print('Vou apresentar os sguidores: ')
+        print(seguidores["followers"])
+        for user in seguidores["followers"].items():
+            print('Um utilizador: ', user)
+        print('AGORA VEM A PARTE DO FLOODING?')
+
+def utilizador_online(host, port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((host, port))
+        s.send('hi')
+        return True
+    except:
+        print('TIMEOUT TIMEOUT TIMEOUT!!!')
+        return False
 
 def envia_mensagem():
     msg = input('Insert message: ')
     msg = msg.replace('\n','')
-    # timeline.append({'id': nickname, 'message': msg})
+    timeline.append({'utilizador': username, 'mensagem': msg})
     print(msg)
     # result = builder.simple_msg(msg, nickname)
+    asyncio.ensure_future(escreve_timeline_utilizadores(msg))
     
-    # asyncio.async(async_tasks.task_send_msg(result, server, nickname, vector_clock))
+    
 
     return False
 
@@ -165,6 +193,7 @@ def get_utilizador():
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
+    global ip
     ip = s.getsockname()[0]
     s.close()
 
@@ -173,9 +202,12 @@ def main(argv):
     
     get_utilizador()
     get_ip()
+    global porta
+    porta = int(argv[1])
+    print('Quero ver o ip: ', ip,porta)
 
     print('Realiza a conexão à DHT')
-    loop = conectar_dht(ip, int(argv[1]))
+    loop = conectar_dht(ip, porta)
 
     asyncio.ensure_future(build_user_info())                                                    # Register in DHT user info
 
