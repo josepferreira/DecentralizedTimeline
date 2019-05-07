@@ -1,8 +1,11 @@
 import logging, asyncio, sys, json, socket
 
-from kademlia.network import Server
+from threading import Thread
 
-DEBUG = True 
+from kademlia.network import Server
+from Socket.MySocket import MySocket
+
+DEBUG = False#True 
 
 # ---------------
 
@@ -92,7 +95,7 @@ async def faz_pedido_seguir(idUtilizador):
         except Exception:
             print('Following ' + idUtilizador)
             following.append({'id': idUtilizador, 'ip': json_user['ip'], 'porta': json_user['porta']})
-            json_user['followers'][username] = f'{ip} {porta}'
+            json_user['followers'][username] = (ip, porta)
             asyncio.ensure_future(server.set(idUtilizador, json.dumps(json_user)))
 
 def segue_utilizador():
@@ -126,31 +129,37 @@ async def escreve_timeline_utilizadores(msg):
     else:
         print('Vou apresentar os sguidores: ')
         print(seguidores["followers"])
-        for user in seguidores["followers"].items():
-            print('Um utilizador: ', user)
+        for (userIP, userPorta) in seguidores["followers"].items():
+            ms = MySocket(userIP, userPorta)
+            ms.send(msg)
         print('AGORA VEM A PARTE DO FLOODING?')
 
 def utilizador_online(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
+        print('Conectar:',host,porta)
         s.connect((host, port))
-        s.send('hi')
+        print('Connect feito')
+        s.send('hi'.encode('utf-8'))
+        print('Enviei')
         return True
     except:
         print('TIMEOUT TIMEOUT TIMEOUT!!!')
         return False
+
+def transforma_msg(mensagem):
+    msg = {'msg': mensagem, 'id': username}
+    return json.dumps(msg)
 
 def envia_mensagem():
     msg = input('Insert message: ')
     msg = msg.replace('\n','')
     timeline.append({'utilizador': username, 'mensagem': msg})
     print(msg)
-    # result = builder.simple_msg(msg, nickname)
-    asyncio.ensure_future(escreve_timeline_utilizadores(msg))
-    
-    
-
+    msg_json = transforma_msg(msg)
+    asyncio.ensure_future(escreve_timeline_utilizadores(msg_json))
     return False
+
 
 
 # exit app
@@ -197,6 +206,11 @@ def get_ip():
     ip = s.getsockname()[0]
     s.close()
 
+def cria_conexao():
+    ms = MySocket(ip, porta)
+    ms.bind()
+    ms.cria_fila()
+
 def main(argv):
     print('Saudações')
     
@@ -213,9 +227,14 @@ def main(argv):
 
 
     loop.add_reader(sys.stdin, handle_stdin)
+    
+    thread = Thread(target = cria_conexao)
+    thread.start()
 
     m = build_menu()
     asyncio.ensure_future(task(loop,m))
+
+    utilizador_online('192.168.1.81', 7062)
 
     try:                                                  
         loop.run_forever()                                                                  
