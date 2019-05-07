@@ -129,9 +129,9 @@ async def escreve_timeline_utilizadores(msg):
     else:
         print('Vou apresentar os sguidores: ')
         print(seguidores["followers"])
-        for (userIP, userPorta) in seguidores["followers"].items():
-            ms = MySocket(userIP, userPorta)
-            ms.send(msg)
+        for _,userInfo in seguidores["followers"].items():
+            ms = MySocket(userInfo[0], userInfo[1])
+            ms.envia(msg)
         print('AGORA VEM A PARTE DO FLOODING?')
 
 def utilizador_online(host, port):

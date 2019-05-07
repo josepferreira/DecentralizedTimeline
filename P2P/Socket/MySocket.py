@@ -18,7 +18,7 @@ def processa_mensagem(conexao, endereco): #possivelmente a timeline
             print('Data está: ', data)
             if data:
                 print('Recebido "%s"' % data.decode('utf-8'))
-                result = 'Esta'.encode('utf-8')#processa_texto(data)
+                result = processa_texto(data)
                 conexao.sendall(result)
             else:
                 break
@@ -43,8 +43,10 @@ def processa_mensagem(conexao, endereco): #possivelmente a timeline
 #         conexao.close()
 
 def processa_texto(data):
-    info = json.loads(data)
-    print('\n\n\n', info, '\n\n\n')
+    try:
+        info = json.loads(data)
+        print('\n\n\n', info, '\n\n\n')
+    except: pass
     #timeline.append({'id': info['id'], 'message': info['msg']})
     return 'ACK'.encode('utf-8')
 
