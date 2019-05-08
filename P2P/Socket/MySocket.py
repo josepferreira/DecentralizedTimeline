@@ -1,57 +1,5 @@
 import socket, asyncio, json
 
-queue = ""
-
-def processa_pedido(q): # depois tentar ver como parar
-    while True:
-        (conexao, endereco) = yield from q.get()
-        print('Fila recebeu')
-        processa_mensagem(conexao,endereco)
-        
-        #loop.call_soon_threadsafe(loop.stop)
-
-def processa_mensagem(conexao, endereco): #possivelmente a timeline
-    try:
-        print('Conexão vinda de: ', endereco)
-        while True:
-            data = conexao.recv(1024)
-            print('Data está: ', data)
-            if data:
-                print('Recebido "%s"' % data.decode('utf-8'))
-                result = processa_texto(data)
-                conexao.sendall(result)
-            else:
-                break
-    except:
-        print('Exception')
-    finally:
-        print('Fechar')
-        conexao.close()
-# def processa_mensagem(conexao, endereco): #possivelmente a timeline
-#     try:
-#         print('Conexão vinda de: ', endereco)
-#         while True:
-#             data = conexao.recv(1024)
-#             print('Data está: ', data)
-#             if data:
-#                 print('Recebido "%s"' % data.decode('utf-8'))
-#                 result = processa_texto(data)
-#                 conexao.sendall(result)
-#             else:
-#                 break
-#     finally:
-#         conexao.close()
-
-def processa_texto(data):
-    try:
-        info = json.loads(data)
-        print('\n\n\n', info, '\n\n\n')
-    except: pass
-    #timeline.append({'id': info['id'], 'message': info['msg']})
-    return 'ACK'.encode('utf-8')
-
-# PARA ENVIAR MENSAGENS:
-
 class MySocket:
 
     def __init__(self, ip, porta):
@@ -63,35 +11,59 @@ class MySocket:
         print('Bind: ',self.ip,self.porta)
         self.s.bind((self.ip, self.porta))
 
-    def cria_fila(self):
-        global queue
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        queue = asyncio.Queue()
-        self.s.listen(1)
-        loop.add_reader(self.s,self.listen())
-        asyncio.ensure_future(processa_pedido(queue))
-        loop.run_forever()                                                                 # Keeps the user online
-    
-    def listen(self):
-        connection, client_address = self.s.accept()
-        print('Conexão recebida: ',client_address)
-        #self.processa_mensagem(connection,client_address)
-        asyncio.ensure_future(queue.put((connection,client_address)))
+    def processa_mensagem(self, data):
+        try:
+            info = json.loads(data)
+            print('\n\n\n', info, '\n\n\n')
+        except: pass
+        #timeline.append({'id': info['id'], 'message': info['msg']})
+        return 'ACK'.encode('utf-8')
 
+    async def processa_pedido(self, client):
+        request = None
+        #while request != 'quit':
+        request = (await self.loop.sock_recv(client, 255)).decode('utf8')
+        print('Recebemos: ', request)
+        response = self.processa_mensagem(request)
+        await self.loop.sock_sendall(client, response)
+        client.close()
+
+
+    async def processa_conexoes(self):
+        while True:
+            client, _ = await self.loop.sock_accept(self.s)
+            self.loop.create_task(self.processa_pedido(client))
+
+    def cria_fila(self):
+        '''
+        É necessário chamar o método "listen" do socket para que ele comece a escutar conexões na porta.
+        Depois é feito o add_reader, com o socket (file descriptor) e a callback para ser chamada aquando de uma ligação no socket
+        '''
+        #global queue
+        try:
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
+            self.s.listen(8)
+            self.s.setblocking(False)
+            print('Em escuta de novas conexões')
+            self.loop.run_until_complete(self.processa_conexoes())
+        except: 
+            print('Erro na cria fila')                                                                 # Keeps the user online
 
 
     def envia(self, mensagem):
-        self.s.connect((self.ip, self.porta))
         try:
+            self.s.connect((self.ip, self.porta))
             self.s.sendall(mensagem.encode('utf-8'))
-
+            print('Consegui enviar')
             data = self.s.recv(256)
             print ('received "%s"' % data.decode('utf-8'))
             # if not data.decode('utf-8') == 'ACK':
             #     info = json.loads(data)
             #     if info['type'] == 'timeline':
             #         record_messages(data, timeline)
+        except:
+            print('Utilizador offline')
         finally:
             print('closing socket')
             self.s.close()

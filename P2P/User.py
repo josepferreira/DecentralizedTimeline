@@ -5,6 +5,9 @@ from threading import Thread
 from kademlia.network import Server
 from Socket.MySocket import MySocket
 
+sys.stderr = open('./erros.txt', 'w')
+
+
 DEBUG = False#True 
 
 # ---------------
@@ -140,8 +143,6 @@ def utilizador_online(host, port):
         print('Conectar:',host,porta)
         s.connect((host, port))
         print('Connect feito')
-        s.send('hi'.encode('utf-8'))
-        print('Enviei')
         return True
     except:
         print('TIMEOUT TIMEOUT TIMEOUT!!!')
@@ -207,9 +208,13 @@ def get_ip():
     s.close()
 
 def cria_conexao():
+    print('1')
     ms = MySocket(ip, porta)
+    print('2')
     ms.bind()
+    print('3')
     ms.cria_fila()
+    print('4')
 
 def main(argv):
     print('Saudações')
@@ -234,7 +239,7 @@ def main(argv):
     m = build_menu()
     asyncio.ensure_future(task(loop,m))
 
-    utilizador_online('192.168.1.81', 7062)
+    #utilizador_online('192.168.2.7', 7062)
 
     try:                                                  
         loop.run_forever()                                                                  
