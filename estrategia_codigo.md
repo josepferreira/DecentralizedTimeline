@@ -37,6 +37,6 @@
 - timestamp
 - id da mensagem local
 - texto da publicação
-- importante para o gosip:
+- importante para o gossip:
     - nr de "vizinhos" a que tem de enviar
     - vizinhos aos quais ainda falta enviar

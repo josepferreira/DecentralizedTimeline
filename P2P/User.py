@@ -1,4 +1,5 @@
-import logging, asyncio, sys, json, socket
+import logging, asyncio, sys, json, socket, functools
+from datetime import datetime
 
 from threading import Thread
 
@@ -109,23 +110,28 @@ def segue_utilizador():
     asyncio.ensure_future(faz_pedido_seguir(idUtilizador))
     return False
 
-
-def ordena_mensagem(a):
-    print(a)
-    return (a['utilizador'],a['id'])
+def ordena_mensagem(a,b):
+    if a['utilizador'] == b['utilizador']:
+        return a['id'] - b['id']
+    
+    if a['data'] > b['data']:
+        return 1
+    if a['data'] < b['data']:
+        return -1
+    return 0
+ 
 ## depois temos de juntar as timelines
 def mostra_timeline():
 
-    print('Mostrar timeline')
     timeline = [a for a in my_timeline]
     timeline.extend(following_timeline)
-    print('Vou ordenar')
-    timeline.sort(key=lambda x: ordena_mensagem(x))
-    print('Ordenado')
+    cmp = functools.cmp_to_key(ordena_mensagem)
+    timeline.sort(key=cmp)
     menu.clear()
     print('*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-TIMELINE*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-')
     for msg in timeline:
         print(msg['utilizador'] + ' - ' + msg['mensagem'])
+        print(msg)
     print('*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-')
     input('Press Enter')
     menu.clear()
@@ -162,12 +168,16 @@ def utilizador_online(host, port):
         return False
 
 def envia_mensagem():
+    global ultima_mensagem
     msg = input('Insert message: ')
     msg = msg.replace('\n','')
-    mensagem = {'utilizador': username,'mensagem': msg, 'id': ultima_mensagem}
+    data = datetime.now()
+    mensagem = {'utilizador': username,'mensagem': msg, 'id': ultima_mensagem, 'data':str(data)}
     my_timeline.append(mensagem)
     print(mensagem)
     msg_json = json.dumps(mensagem)
+    print('json feito')
+    ultima_mensagem += 1
     asyncio.ensure_future(escreve_timeline_utilizadores(msg_json))
     return False
 
