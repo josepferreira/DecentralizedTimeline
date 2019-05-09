@@ -7,4 +7,5 @@ Podemos ter um problema de se não recebermos uma mensagem nunca mais recebemos 
     - ou aceitamos sempre a ao ordenar isso ordena (mas n garante q vejamos sempre a 5 depois da 4)
     - ou ao receber a 5 sem receber a 4 avisamos o remetente
         - pode levar a problemas de muitas conexoes (mas será pouco provável isto acontecer não?)
-        
+
+Podemos ter um problema se a DHT não garantir que as informações estão acessiveis (caso um saia e deixe de ser acessivel a informação que esse estava a guardar)

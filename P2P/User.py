@@ -25,7 +25,9 @@ username = ""
 ip = ""
 porta = ""
 following = []
-timeline = []
+my_timeline = []
+ultima_mensagem = 0
+following_timeline = []
 server = Server()
 
 # dos gajos!!!!
@@ -108,7 +110,18 @@ def segue_utilizador():
     return False
 
 
+def ordena_mensagem(a):
+    print(a)
+    return (a['utilizador'],a['id'])
+## depois temos de juntar as timelines
 def mostra_timeline():
+
+    print('Mostrar timeline')
+    timeline = [a for a in my_timeline]
+    timeline.extend(following_timeline)
+    print('Vou ordenar')
+    timeline.sort(key=lambda x: ordena_mensagem(x))
+    print('Ordenado')
     menu.clear()
     print('*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-TIMELINE*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-')
     for msg in timeline:
@@ -148,16 +161,13 @@ def utilizador_online(host, port):
         print('TIMEOUT TIMEOUT TIMEOUT!!!')
         return False
 
-def transforma_msg(mensagem):
-    msg = {'msg': mensagem, 'id': username}
-    return json.dumps(msg)
-
 def envia_mensagem():
     msg = input('Insert message: ')
     msg = msg.replace('\n','')
-    timeline.append({'utilizador': username, 'mensagem': msg})
-    print(msg)
-    msg_json = transforma_msg(msg)
+    mensagem = {'utilizador': username,'mensagem': msg, 'id': ultima_mensagem}
+    my_timeline.append(mensagem)
+    print(mensagem)
+    msg_json = json.dumps(mensagem)
     asyncio.ensure_future(escreve_timeline_utilizadores(msg_json))
     return False
 
@@ -208,12 +218,9 @@ def get_ip():
     s.close()
 
 def cria_conexao():
-    print('1')
     ms = MySocket(ip, porta)
-    print('2')
     ms.bind()
-    print('3')
-    ms.cria_fila()
+    ms.cria_fila(following_timeline)
     print('4')
 
 def main(argv):

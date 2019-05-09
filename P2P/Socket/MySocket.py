@@ -6,6 +6,7 @@ class MySocket:
         self.ip = ip
         self.porta = porta
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.following_timeline = []
 
     def bind(self):
         print('Bind: ',self.ip,self.porta)
@@ -14,7 +15,11 @@ class MySocket:
     def processa_mensagem(self, data):
         try:
             info = json.loads(data)
+            # para já assumimos que a mensagem que vem é de timeline, mas pode também ser
+            # de um pedido q tenhamos feito
             print('\n\n\n', info, '\n\n\n')
+            self.following_timeline.append(info)
+            print(self.following_timeline)
         except: pass
         #timeline.append({'id': info['id'], 'message': info['msg']})
         return 'ACK'.encode('utf-8')
@@ -34,13 +39,15 @@ class MySocket:
             client, _ = await self.loop.sock_accept(self.s)
             self.loop.create_task(self.processa_pedido(client))
 
-    def cria_fila(self):
+    def cria_fila(self, following_timeline):
         '''
         É necessário chamar o método "listen" do socket para que ele comece a escutar conexões na porta.
         Depois é feito o add_reader, com o socket (file descriptor) e a callback para ser chamada aquando de uma ligação no socket
         '''
         #global queue
         try:
+            self.following_timeline = following_timeline
+            print('TIme: ', self.following_timeline)
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
             self.s.listen(8)
