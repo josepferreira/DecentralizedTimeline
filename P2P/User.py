@@ -181,7 +181,34 @@ def envia_mensagem():
     asyncio.ensure_future(escreve_timeline_utilizadores(msg_json))
     return False
 
+''' Pede a timeline a um utilizador em especifico
+    Envia também quais são os que nos faltam
+    Esses têm o id da ultima publicacao que recebemos para q ele nos possa responder
+    com os pubs q tem mais recentes apenas
+''' 
+def pede_timeline_user(utilizador,faltam):
+    userInfo = server.get(utilizador) #para já vamos buscar à DHT (depois podemos ter localmente, mas temos de ter cuidado com as mudanças de ip)
+    ms = MySocket(userInfo['ip'], userInfo['porta'])
+    mensagem = {'e_timeline':True,'utilizadores':faltam}
+    msg_json = json.dumps(mensagem)
+    dados = ms.envia(msg_json)
+    return dados
 
+''' Vamos pedir a timeline
+    para já assumimos que as mensagens chegam a todos
+    e por isso os utilizadores têm sempre a timeline "correta"
+    Para além disso para já é bloqueante
+'''
+def pede_timeline():
+    print('--------Pedir timeline---------')
+    faltam = [i for i in following]
+    estao = []
+    for util in faltam:
+        if util not in estao:
+            (timeline,utilizadores) = pede_timeline_user(util,[i for i in faltam if i not in estao])
+            following_timeline.extend(timeline)
+            estao.extend(utilizadores)
+    print('--------Terminou pedir timeline---------')    
 
 # exit app
 def desconecta():
@@ -247,6 +274,7 @@ def main(argv):
 
     asyncio.ensure_future(build_user_info())                                                    # Register in DHT user info
 
+    pede_timeline()
 
     loop.add_reader(sys.stdin, handle_stdin)
     

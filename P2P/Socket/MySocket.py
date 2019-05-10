@@ -65,6 +65,11 @@ class MySocket:
             print('Consegui enviar')
             data = self.s.recv(256)
             print ('received "%s"' % data.decode('utf-8'))
+            recebido = data.decode('utf-8')
+            dados = json.loads(recebido)
+            if dados['e_timeline']:
+                # é resposta de timeline
+                return (dados['timeline'],dados['utilizadores']
             # if not data.decode('utf-8') == 'ACK':
             #     info = json.loads(data)
             #     if info['type'] == 'timeline':
@@ -74,3 +79,4 @@ class MySocket:
         finally:
             print('closing socket')
             self.s.close()
+        return data
