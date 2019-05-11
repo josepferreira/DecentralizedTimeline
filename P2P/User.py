@@ -22,6 +22,7 @@ DEBUG = False#True
 # - Seguir um Utilizador
 # - Ver a timeline
 # - Pedir para ver outros Users
+
 queue = asyncio.Queue()
 username = ""
 ip = ""
@@ -33,12 +34,6 @@ following_timeline = []
 server = Server()
 myStorage = None
 
-# dos gajos!!!!
-##
-###
-#####
-########
-##########
 from Menu.Menu import Menu
 import Menu.Menu as menu
 from Menu.Item import Item
@@ -176,6 +171,9 @@ def envia_mensagem():
     data = datetime.now()
     mensagem = {'utilizador': username,'mensagem': msg, 'id': ultima_mensagem, 'data':str(data)}
     my_timeline.append(mensagem)
+    
+    #Update da timeline local
+
     myStorage.write_my_timeline(mensagem)
     print(mensagem)
     msg_json = json.dumps(mensagem)
@@ -187,11 +185,11 @@ def envia_mensagem():
 
 def pede_timeline_user(utilizador,faltam):
 
-    ''' Pede a timeline a um utilizador em especifico
+    """Pede a timeline a um utilizador em especifico
     Envia também quais são os que nos faltam
-    Esses têm o id da ultima publicacao que recebemos para q ele nos possa responder
+    Esses têm o id da ultima publicacao que recebemos para que ele nos possa responder.
     com os pubs q tem mais recentes apenas
-''' 
+    """
     userInfo = server.get(utilizador) #para já vamos buscar à DHT (depois podemos ter localmente, mas temos de ter cuidado com as mudanças de ip)
     ms = MySocket(userInfo['ip'], userInfo['porta'])
     mensagem = {'e_timeline':True,'utilizadores':faltam}
@@ -202,11 +200,12 @@ def pede_timeline_user(utilizador,faltam):
 
 def pede_timeline():
 
-    ''' Vamos pedir a timeline
+    """
+    Vamos pedir a timeline
     para já assumimos que as mensagens chegam a todos
     e por isso os utilizadores têm sempre a timeline "correta"
     Para além disso para já é bloqueante
-'''
+    """
     print('--------Pedir timeline---------')
     faltam = [i for i in following]
     estao = []
@@ -274,7 +273,9 @@ def main(argv):
 
     global myStorage
 
+    # Inicializar armazenamento local
     myStorage = MyStorage (username)
+    
 
     get_ip()
     global porta
