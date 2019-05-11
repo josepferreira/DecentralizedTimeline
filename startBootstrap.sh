@@ -1,0 +1,1 @@
+python3 P2P/Nodes/bootstrap.py localhost 7060
