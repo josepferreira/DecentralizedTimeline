@@ -56,8 +56,7 @@ class MySocket:
             self.loop.run_until_complete(self.processa_conexoes())
         except: 
             print('Erro na cria fila')                                                                 # Keeps the user online
-
-
+            
     def envia(self, mensagem):
         try:
             self.s.connect((self.ip, self.porta))
@@ -69,7 +68,7 @@ class MySocket:
             dados = json.loads(recebido)
             if dados['e_timeline']:
                 # é resposta de timeline
-                return (dados['timeline'],dados['utilizadores']
+                return (dados['timeline'],dados['utilizadores'])
             # if not data.decode('utf-8') == 'ACK':
             #     info = json.loads(data)
             #     if info['type'] == 'timeline':
@@ -79,4 +78,4 @@ class MySocket:
         finally:
             print('closing socket')
             self.s.close()
-        return data
+            return data

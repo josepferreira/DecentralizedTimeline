@@ -5,8 +5,9 @@ from threading import Thread
 
 from kademlia.network import Server
 from Socket.MySocket import MySocket
+from Storage.MyStorage import MyStorage
 
-sys.stderr = open('./erros.txt', 'w')
+#sys.stderr = open('./erros.txt', 'w')
 
 
 DEBUG = False#True 
@@ -30,6 +31,7 @@ my_timeline = []
 ultima_mensagem = 0
 following_timeline = []
 server = Server()
+myStorage = None
 
 # dos gajos!!!!
 ##
@@ -174,6 +176,7 @@ def envia_mensagem():
     data = datetime.now()
     mensagem = {'utilizador': username,'mensagem': msg, 'id': ultima_mensagem, 'data':str(data)}
     my_timeline.append(mensagem)
+    myStorage.write_my_timeline(mensagem)
     print(mensagem)
     msg_json = json.dumps(mensagem)
     print('json feito')
@@ -181,12 +184,14 @@ def envia_mensagem():
     asyncio.ensure_future(escreve_timeline_utilizadores(msg_json))
     return False
 
-''' Pede a timeline a um utilizador em especifico
+
+def pede_timeline_user(utilizador,faltam):
+
+    ''' Pede a timeline a um utilizador em especifico
     Envia também quais são os que nos faltam
     Esses têm o id da ultima publicacao que recebemos para q ele nos possa responder
     com os pubs q tem mais recentes apenas
 ''' 
-def pede_timeline_user(utilizador,faltam):
     userInfo = server.get(utilizador) #para já vamos buscar à DHT (depois podemos ter localmente, mas temos de ter cuidado com as mudanças de ip)
     ms = MySocket(userInfo['ip'], userInfo['porta'])
     mensagem = {'e_timeline':True,'utilizadores':faltam}
@@ -194,12 +199,14 @@ def pede_timeline_user(utilizador,faltam):
     dados = ms.envia(msg_json)
     return dados
 
-''' Vamos pedir a timeline
+
+def pede_timeline():
+
+    ''' Vamos pedir a timeline
     para já assumimos que as mensagens chegam a todos
     e por isso os utilizadores têm sempre a timeline "correta"
     Para além disso para já é bloqueante
 '''
-def pede_timeline():
     print('--------Pedir timeline---------')
     faltam = [i for i in following]
     estao = []
@@ -264,6 +271,11 @@ def main(argv):
     print('Saudações')
     
     get_utilizador()
+
+    global myStorage
+
+    myStorage = MyStorage (username)
+
     get_ip()
     global porta
     porta = int(argv[1])
