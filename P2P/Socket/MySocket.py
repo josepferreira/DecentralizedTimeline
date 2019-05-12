@@ -2,27 +2,68 @@ import socket, asyncio, json
 
 class MySocket:
 
-    def __init__(self, ip, porta):
+    def __init__(self, ip, porta, username="",
+                my_timeline=[],following={},following_timeline=[]):
         self.ip = ip
         self.porta = porta
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.following_timeline = []
+        self.username = username
+        self.my_timeline = my_timeline
+        self.following = following
+        self.following_timeline = following_timeline
 
     def bind(self):
         print('Bind: ',self.ip,self.porta)
         self.s.bind((self.ip, self.porta))
 
+    def processa_pedido_timeline(self, data):
+        # print('processa pedido')
+        # print(data)
+        utilizadores_comuns = data['utilizadores'].keys() & self.following.keys()
+        faltam = {i:data['utilizadores'][i] for i in utilizadores_comuns 
+                            if self.following[i]['ultima_mensagem'] > data['utilizadores'][i]}
+        # print(faltam)
+
+        timeline_r = [i for i in self.following_timeline 
+                        if i['utilizador'] in faltam.keys()
+                        and faltam[i['utilizador']] < i['id']]
+        
+        my_timeline_r = [i for i in self.my_timeline if i['id'] > faltam[self.username]]
+
+        timeline_r.extend(my_timeline_r)
+
+        utilizadores = [i for i in utilizadores_comuns]
+        utilizadores.append(self.username)
+        
+        # print(timeline_r)
+        resposta = {'timeline':timeline_r,
+                'utilizadores':utilizadores,'e_timeline':True}
+        print(resposta)
+        return resposta
+
     def processa_mensagem(self, data):
+        resposta = 'ACK'.encode('utf-8')
         try:
             info = json.loads(data)
+            print('\n\n\n', info, '\n\n\n')
+            if 'e_timeline' in info.keys():
+                # é um pedido de timeline, temos de responder
+                # print('E TIMELINE')
+                msg = self.processa_pedido_timeline(info)
+                resposta = json.dumps(msg).encode('utf-8')
+                # print('RESP:')
+                # print(resposta)
+                return resposta
+
             # para já assumimos que a mensagem que vem é de timeline, mas pode também ser
             # de um pedido q tenhamos feito
-            print('\n\n\n', info, '\n\n\n')
-            self.following_timeline.append(info)
-            print(self.following_timeline)
+            else:
+                self.following_timeline.append(info)
+                # print(self.following_timeline)
         except: pass
         #timeline.append({'id': info['id'], 'message': info['msg']})
-        return 'ACK'.encode('utf-8')
+        print(resposta)
+        return resposta
 
     async def processa_pedido(self, client):
         request = None
@@ -39,14 +80,13 @@ class MySocket:
             client, _ = await self.loop.sock_accept(self.s)
             self.loop.create_task(self.processa_pedido(client))
 
-    def cria_fila(self, following_timeline):
+    def cria_fila(self):
         '''
         É necessário chamar o método "listen" do socket para que ele comece a escutar conexões na porta.
         Depois é feito o add_reader, com o socket (file descriptor) e a callback para ser chamada aquando de uma ligação no socket
         '''
         #global queue
         try:
-            self.following_timeline = following_timeline
             print('TIme: ', self.following_timeline)
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
@@ -63,12 +103,17 @@ class MySocket:
             self.s.sendall(mensagem.encode('utf-8'))
             print('Consegui enviar')
             data = self.s.recv(256)
-            print ('received "%s"' % data.decode('utf-8'))
+            print ('receivedasd "%s"' % data.decode('utf-8'))
             recebido = data.decode('utf-8')
-            dados = json.loads(recebido)
-            if dados['e_timeline']:
-                # é resposta de timeline
-                return (dados['timeline'],dados['utilizadores'])
+            try:
+                dados = json.loads(recebido)
+                print(dados)
+                if 'e_timeline' in dados.keys():
+                    # é resposta de timeline
+                    data = (dados['timeline'],dados['utilizadores'])
+                    print(data)
+            except:
+                pass
             # if not data.decode('utf-8') == 'ACK':
             #     info = json.loads(data)
             #     if info['type'] == 'timeline':

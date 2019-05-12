@@ -27,7 +27,8 @@ queue = asyncio.Queue()
 username = ""
 ip = ""
 porta = ""
-following = []
+following = {} #vai ser um dicionário, a chave é o username e os valores:
+                # ip, porta, ultima mensagem
 my_timeline = []
 ultima_mensagem = 0
 following_timeline = []
@@ -97,14 +98,20 @@ async def faz_pedido_seguir(idUtilizador):
                 return 
         except Exception:
             print('Following ' + idUtilizador)
-            following.append({'id': idUtilizador, 'ip': json_user['ip'], 'porta': json_user['porta']})
+            following[idUtilizador] =  {'ip': json_user['ip'], 'porta': json_user['porta'], 'ultima_mensagem':-1}
             json_user['followers'][username] = (ip, porta)
             asyncio.ensure_future(server.set(idUtilizador, json.dumps(json_user)))
 
 def segue_utilizador():
     idUtilizador = input('User Nickname: ')
     idUtilizador = idUtilizador.replace('\n', '')
-    asyncio.ensure_future(faz_pedido_seguir(idUtilizador))
+    if idUtilizador == username:
+        print('Não podes pedir para te seguir a ti próprio!')
+    elif idUtilizador in following.keys():
+        #estou a seguir o utilizador já, pelo q n vale a pena pedir para seguir outra vez
+        print('Não podes pedir para seguir porque já o segues!')
+    else:
+        asyncio.ensure_future(faz_pedido_seguir(idUtilizador))
     return False
 
 def ordena_mensagem(a,b):
@@ -124,14 +131,14 @@ def mostra_timeline():
     timeline.extend(following_timeline)
     cmp = functools.cmp_to_key(ordena_mensagem)
     timeline.sort(key=cmp)
-    menu.clear()
+    # menu.clear()
     print('*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-TIMELINE*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-')
     for msg in timeline:
         print(msg['utilizador'] + ' - ' + msg['mensagem'])
         print(msg)
     print('*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-')
     input('Press Enter')
-    menu.clear()
+    # menu.clear()
     return False
 
 ## Para mandar mensagens
@@ -183,14 +190,15 @@ def envia_mensagem():
     return False
 
 
-def pede_timeline_user(utilizador,faltam):
+async def pede_timeline_user(utilizador,faltam):
 
     """Pede a timeline a um utilizador em especifico
     Envia também quais são os que nos faltam
     Esses têm o id da ultima publicacao que recebemos para que ele nos possa responder.
     com os pubs q tem mais recentes apenas
     """
-    userInfo = server.get(utilizador) #para já vamos buscar à DHT (depois podemos ter localmente, mas temos de ter cuidado com as mudanças de ip)
+    user_info = await server.get(utilizador) #para já vamos buscar à DHT (depois podemos ter localmente, mas temos de ter cuidado com as mudanças de ip)
+    userInfo = json.loads(user_info)
     ms = MySocket(userInfo['ip'], userInfo['porta'])
     mensagem = {'e_timeline':True,'utilizadores':faltam}
     msg_json = json.dumps(mensagem)
@@ -198,7 +206,7 @@ def pede_timeline_user(utilizador,faltam):
     return dados
 
 
-def pede_timeline():
+async def pede_timeline():
 
     """
     Vamos pedir a timeline
@@ -206,15 +214,25 @@ def pede_timeline():
     e por isso os utilizadores têm sempre a timeline "correta"
     Para além disso para já é bloqueante
     """
-    print('--------Pedir timeline---------')
-    faltam = [i for i in following]
+    print('-----------------Pedir timeline---------------')
+
+    faltam = following.copy()
     estao = []
-    for util in faltam:
+    for util,_ in faltam.items():
         if util not in estao:
-            (timeline,utilizadores) = pede_timeline_user(util,[i for i in faltam if i not in estao])
-            following_timeline.extend(timeline)
-            estao.extend(utilizadores)
-    print('--------Terminou pedir timeline---------')    
+            try:
+                (timeline,utilizadores) = await pede_timeline_user(util,{i:faltam[i]['ultima_mensagem'] for i in faltam if i not in estao})
+                following_timeline.extend(timeline)
+                estao.extend(utilizadores)
+            except:
+                print('Exceção a pedir timeline')
+    
+    if len(estao) != len(faltam):
+        utilizadores_faltam = [i for i in faltam.keys() if i not in estao]
+        print('Falta pedir timeline, provavelmente a users que estavam offline!', utilizadores_faltam)
+        print('Temos de decidir o que fazer, se calhar pedimos aos seguidores deles!')
+
+    print('----------------Terminou pedir timeline----------------')    
 
 # exit app
 def desconecta():
@@ -261,9 +279,9 @@ def get_ip():
     s.close()
 
 def cria_conexao():
-    ms = MySocket(ip, porta)
+    ms = MySocket(ip, porta, username, my_timeline, following, following_timeline)
     ms.bind()
-    ms.cria_fila(following_timeline)
+    ms.cria_fila()
     print('4')
 
 def main(argv):
@@ -287,7 +305,7 @@ def main(argv):
 
     asyncio.ensure_future(build_user_info())                                                    # Register in DHT user info
 
-    pede_timeline()
+    asyncio.ensure_future(pede_timeline())
 
     loop.add_reader(sys.stdin, handle_stdin)
     
