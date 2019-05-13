@@ -128,6 +128,9 @@ def ordena_mensagem(a,b):
 def mostra_timeline():
 
     timeline = [a for a in my_timeline]
+    data_atual = datetime.timestamp(datetime.now())
+    following_timeline = [i for i in following_timeline if i['timestamp'] > data_atual]
+    print('Filtrar publicações dos followers!')
     timeline.extend(following_timeline)
     cmp = functools.cmp_to_key(ordena_mensagem)
     timeline.sort(key=cmp)
@@ -181,7 +184,6 @@ def envia_mensagem():
     
     #Update da timeline local
 
-    myStorage.write_my_timeline(mensagem)
     print(mensagem)
     msg_json = json.dumps(mensagem)
     print('json feito')
@@ -284,6 +286,27 @@ def cria_conexao():
     ms.cria_fila()
     print('4')
 
+def extrair_informacao():
+    info = myStorage.read()
+
+    global username, my_timeline, following, following_timeline
+
+    username = info['username']
+    my_timeline = info['timeline']
+    print('Colocamos todas as nossas publicações em memória???')
+    following = info['following']
+    data_atual = datetime.timestamp(datetime.now())
+    following_timeline = list(filter(lambda a: a['timestamp'] > data_atual,info['following_timeline']))
+    print('Filtramos as publicaçoes que já tenham expirado!')
+
+def para_thread():
+    ms = MySocket(ip, porta)
+    mensagem = {'termina': True}
+    ms.envia(json.dumps(mensagem))
+
+def guarda_informacoes():
+    pass
+
 def main(argv):
     print('Saudações')
     
@@ -293,6 +316,8 @@ def main(argv):
 
     # Inicializar armazenamento local
     myStorage = MyStorage (username)
+
+    extrair_informacao()
     
 
     get_ip()
@@ -324,7 +349,10 @@ def main(argv):
     finally:
         print('Vai embora!')
         server.stop()                                                                       
-        loop.close()                                                                        
+        loop.close()
+        para_thread()
+        thread.join()
+        guarda_informacoes()                                                                        
         sys.exit(1) 
 
 main(sys.argv)

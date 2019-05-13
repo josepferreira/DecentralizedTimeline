@@ -19,3 +19,7 @@ Podemos ter um problema que é ao pedir a timeline e mandar o last id, o que nos
 Temos de ter atenção a pedir as timelines pq podem existir utilizadores q estejam offline e n conseguimos obter essas timelines. Para isso podemos pedir a um seguidor aleatório dele.
 
 A storage deve carregar as informações do utilizador!
+
+As mensagens são guardadas até um dado timestamp (tempo real) o q pode provocar discrepancias. Uma possivel solucao poderia ser ter um mecanismo de sincronização de relogios.
+
+Não consideramos tempos de envio da mensagem quando enviamos a timeline o que pode provocar que uma pub fique mais tempo num utilizador do q noutro!

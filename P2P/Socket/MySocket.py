@@ -1,4 +1,14 @@
-import socket, asyncio, json
+import socket, asyncio, json, sys
+from datetime import datetime
+
+def novoTimestamp():
+    #vamos guardar 12h
+    return datetime.timestamp(datetime.now() + datetime.timedelta(hours=12))
+
+def alteraTimestamp(elem,t):
+    delta = elem['timestamp'] - t
+    elem['timestamp'] = datetime.timestamp(datetime.now() + datetime.timedelta(seconds=delta))
+    return elem
 
 class MySocket:
 
@@ -11,6 +21,7 @@ class MySocket:
         self.my_timeline = my_timeline
         self.following = following
         self.following_timeline = following_timeline
+        self.continua = True
 
     def bind(self):
         print('Bind: ',self.ip,self.porta)
@@ -19,16 +30,22 @@ class MySocket:
     def processa_pedido_timeline(self, data):
         # print('processa pedido')
         # print(data)
+        # intersecao de sets para saber quais os que eu sigo q o outro quer
         utilizadores_comuns = data['utilizadores'].keys() & self.following.keys()
+        
+        # apenas vou enviar se o id da ultima mensagem do outro for inferior ao meu
         faltam = {i:data['utilizadores'][i] for i in utilizadores_comuns 
                             if self.following[i]['ultima_mensagem'] > data['utilizadores'][i]}
         # print(faltam)
 
+        # colocar a timeline dos que eu sigo
         timeline_r = [i for i in self.following_timeline 
                         if i['utilizador'] in faltam.keys()
                         and faltam[i['utilizador']] < i['id']]
         
-        my_timeline_r = [i for i in self.my_timeline if i['id'] > faltam[self.username]]
+        # colocar a minha timeline, apenas as q já passaram o tempo
+        my_timeline_r = [i for i in self.my_timeline if i['id'] > faltam[self.username]
+                                                    and i['timestamp'] > datetime.timestamp(datetime.now())]
 
         timeline_r.extend(my_timeline_r)
 
@@ -37,7 +54,7 @@ class MySocket:
         
         # print(timeline_r)
         resposta = {'timeline':timeline_r,
-                'utilizadores':utilizadores,'e_timeline':True}
+                'utilizadores':utilizadores,'e_timeline':True, 'timestamp':datetime.timestamp(datetime.now())}
         print(resposta)
         return resposta
 
@@ -58,7 +75,14 @@ class MySocket:
             # para já assumimos que a mensagem que vem é de timeline, mas pode também ser
             # de um pedido q tenhamos feito
             else:
-                self.following_timeline.append(info)
+                if 'termina' in info.keys():
+                    self.continua = False
+                else:
+                    info['timestamp'] = novoTimestamp()
+                    self.following_timeline.append(info)
+                    if info['id'] > self.following_timeline[info['utilizador']]['ultima_mensagem']:
+                        print('depois ver o caso de se for maior que k+2')
+                        self.following[info['utilizador']]['ultima_mensagem'] = info['id']              
                 # print(self.following_timeline)
         except: pass
         #timeline.append({'id': info['id'], 'message': info['msg']})
@@ -73,6 +97,8 @@ class MySocket:
         response = self.processa_mensagem(request)
         await self.loop.sock_sendall(client, response)
         client.close()
+        if self.continua == False:
+            self.loop.stop()
 
 
     async def processa_conexoes(self):
@@ -110,6 +136,9 @@ class MySocket:
                 print(dados)
                 if 'e_timeline' in dados.keys():
                     # é resposta de timeline
+                    # vamos atualizar os timestamps (e talvez filtrar as q n podiam ser enviadas)
+                    dados['timeline'] = [alteraTimestamp(i,dados['timeline']) for i in dados['timeline'] if i['timestamp'] > dados['timestamp']]
+                    print('Filtrar os que terminam e atualizar a data de término dos outros! Não consideramos tempos de entrega da mensagem!')
                     data = (dados['timeline'],dados['utilizadores'])
                     print(data)
             except:

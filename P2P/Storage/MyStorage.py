@@ -35,6 +35,7 @@ class MyStorage:
         data['username'] = self.username
         data['timeline'] = []
         data['following'] = {}
+        data['following_timeline'] = []
         nome = self.username + '.json'
         with open(nome, 'w') as outfile:  
             json.dump(data, outfile)
@@ -65,48 +66,18 @@ class MyStorage:
         with open(self.username + '.json', 'w') as outfile:  
             json.dump(data, outfile)
 
-    def write_my_timeline(self, post):
+
+    def write_timeline(self, posts, following, timeline):
 
         """
-        Método que adiciona à timeline do utilizador um novo post.
+        Método que atualiza o ficheiro local de um utilizador. É invocado sempre que o utilizador se desconecta.
         """
+
+        data = self.read()
+        data['following_timeline'] = posts
+        data['following'] = following
+        data['timeline'] = timeline
         
-        data = self.read()
-        data['timeline'].append(post)
-        self.write(data)
-
-    def add_following(self, newFollowing, timelineNewFollowing = []):
-
-        """
-        Método que adiciona ao campo following um novo utilizador.
-        Adiciona uma associação newFollowing -> timelineNewFollowing. 
-        """
-
-        data = self.read()
-        following = data['following']
-        if newFollowing in following:
-            print('O utilizador ' + newFollowing + 'já existe no armazenamento local')
-            
-        else:
-            following[newFollowing] = timelineNewFollowing
-        self.write(data)
-
-
-    def write_following_timeline(self, post, username):
-
-        """
-        Método que adiciona à timeline local de um utilizador que eu sigo um post.
-        """
-
-        data = self.read()
-        following = data['following']
-        if username in following:
-            print('Ja temos a timeline do username: ', username)
-            following[username].append(post)
-        else:
-            print('Temos de criar a timeline do username: ', username)
-            lista = [post]
-            following[username] = lista
         self.write(data)
 
     def clear_post(self, username):
