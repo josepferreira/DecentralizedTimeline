@@ -2,4 +2,4 @@ Kademlia/Java/.idea
 Kademlia/Java/target
 *.class
 **/__pycache__/*
-P2P/*.json
+*.json
