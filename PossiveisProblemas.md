@@ -12,7 +12,7 @@ Podemos ter um problema se a DHT não garantir que as informações estão acess
 
 ## Problemas do código
 
-Ao receber uma mensagem vamos ter de verificar se o id é superior (+2), e caso seja n a podemos receber (ou processar) até que chegue a outra. Temos de decidir o que fazer visto que a outra pode-se ter perdido. (Isto é importante para a estratégia como pedimos a timeline visto que apenas pedimos a partir do ultimo id, e se aceitarmos todas as mensagens podemos perder mensagens não as recebendo)
+Ao receber uma mensagem vamos ter de verificar se o id é superior (>=id_mensagem_atual+2), e caso seja n a podemos receber (ou processar) até que chegue a outra. Temos de decidir o que fazer visto que a outra pode-se ter perdido. (Isto é importante para a estratégia como pedimos a timeline visto que apenas pedimos a partir do ultimo id, e se aceitarmos todas as mensagens podemos perder mensagens não as recebendo)
 
 Podemos ter um problema que é ao pedir a timeline e mandar o last id, o que nos responde ainda n recebeu uma mensagem que está em trânsito, o q pode levar a q n recebamos essa mensagem tbm. (Por exemplo pedimos ao user **j** e ele responde com a timeline do **k**, no entanto vinha uma mensagem do **k** que chega posteriormente ao **j** mas n nos chega a nós pq "estávamos offline" no momento do envia dessa mensagem supostamente)
 
