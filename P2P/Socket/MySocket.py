@@ -83,11 +83,16 @@ class MySocket:
                 if 'termina' in info.keys():
                     self.continua = False
                 else:
-                    info['timestamp'] = novoTimestamp()
-                    self.following_timeline.append(info)
-                    if info['id'] > self.following_timeline[info['utilizador']]['ultima_mensagem']:
-                        print('depois ver o caso de se for maior que k+2')
-                        self.following[info['utilizador']]['ultima_mensagem'] = info['id']              
+                    if 'pedido_utilizador' in info.keys():
+                        print('Estao a pedir-me o username!!')
+                        msg = {'utilizador': self.username}
+                        resposta = json.dumps(msg).encode('utf-8')
+                    else:
+                        info['timestamp'] = novoTimestamp()
+                        self.following_timeline.append(info)
+                        if info['id'] > self.following_timeline[info['utilizador']]['ultima_mensagem']:
+                            print('depois ver o caso de se for maior que k+2')
+                            self.following[info['utilizador']]['ultima_mensagem'] = info['id']              
                 # print(self.following_timeline)
         except: pass
         #timeline.append({'id': info['id'], 'message': info['msg']})
@@ -127,7 +132,29 @@ class MySocket:
             self.loop.run_until_complete(self.processa_conexoes())
         except: 
             print('Erro na cria fila')                                                                 # Keeps the user online
-            
+    
+    def pede_nome_utillizador(self):
+        data = None
+        try:
+            msg = {'pedido_utilizador': True}
+            mensagem = json.dumps(msg)
+            self.s.connect((self.ip, self.porta))
+            self.s.sendall(mensagem.encode('utf-8'))
+            data = self.s.recv(256)
+            recebido = data.decode('utf-8')
+            try:
+                dados = json.loads(recebido)
+                data = dados['utilizador']
+            except:
+                pass
+        except:
+            print('Utilizador offline')
+        finally:
+            print('closing socket')
+            self.s.close()
+            return data
+
+
     def envia(self, mensagem):
         data = None
         try:

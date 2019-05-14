@@ -97,6 +97,20 @@ def novoTimestamp():
     '''
     return datetime.timestamp(datetime.now() + timedelta(hours=12))
 
+def encontra_vizinhos_fisicos():
+    '''
+        Devolve o nome dos utilizadores dos vizinhos que estao ligados diretamente a ele
+    '''
+    vizinhos = server.bootstrappable_neighbors()
+    print('Vizinhos: ',vizinhos)
+    lista_vizinhos = []
+    for (endV, portaV) in vizinhos:
+         if portaV != 7060 and portaV != porta:
+             print('Atenção AQUUUUUUUI!!! O IP ESTA HARD CODED!!! MUDAR PARA O VOSSO')
+             socketV = MySocket('192.168.1.82', portaV)
+             uNovo = socketV.pede_nome_utillizador()
+             lista_vizinhos.append(uNovo)
+    return lista_vizinhos
 
 async def encontra_utilizadores_a():
     '''
@@ -134,6 +148,8 @@ async def encontra_utilizadores_a():
 
         if encontrados == False:
             print('TEM DE VERIFICAR OS VIZINHOS TBM POIS N ENCONTROU Q CHEGUE')
+            
+
     
     print('--------------Utilizadores-------------')
     for u in utilizadores:
@@ -464,6 +480,9 @@ def main(argv):
 
     build_menu()
     asyncio.ensure_future(task(loop))
+
+    
+    print('Os nomes dos meus viznhos sao: ', encontra_vizinhos_fisicos())
 
     #utilizador_online('192.168.2.7', 7062)
 
