@@ -106,8 +106,7 @@ def encontra_vizinhos_fisicos():
     lista_vizinhos = []
     for (endV, portaV) in vizinhos:
          if portaV != 7060 and portaV != porta:
-             print('Atenção AQUUUUUUUI!!! O IP ESTA HARD CODED!!! MUDAR PARA O VOSSO')
-             socketV = MySocket('192.168.1.82', portaV)
+             socketV = MySocket(endV, portaV)
              uNovo = socketV.pede_nome_utillizador()
              lista_vizinhos.append(uNovo)
     return lista_vizinhos
@@ -386,7 +385,7 @@ def conectar_dht(ip, porta):
     
     loop = asyncio.get_event_loop()
 
-    loop.run_until_complete(server.listen(porta))
+    loop.run_until_complete(server.listen(porta, interface=ip))
 
     
     if DEBUG:
