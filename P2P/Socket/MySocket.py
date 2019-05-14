@@ -1,13 +1,13 @@
 import socket, asyncio, json, sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def novoTimestamp():
     #vamos guardar 12h
-    return datetime.timestamp(datetime.now() + datetime.timedelta(hours=12))
+    return datetime.timestamp(datetime.now() + timedelta(hours=12))
 
 def alteraTimestamp(elem,t):
     delta = elem['timestamp'] - t
-    elem['timestamp'] = datetime.timestamp(datetime.now() + datetime.timedelta(seconds=delta))
+    elem['timestamp'] = datetime.timestamp(datetime.now() + timedelta(seconds=delta))
     return elem
 
 class MySocket:
@@ -29,24 +29,29 @@ class MySocket:
 
     def processa_pedido_timeline(self, data):
         # print('processa pedido')
-        # print(data)
+        print(data)
         # intersecao de sets para saber quais os que eu sigo q o outro quer
         utilizadores_comuns = data['utilizadores'].keys() & self.following.keys()
         
         # apenas vou enviar se o id da ultima mensagem do outro for inferior ao meu
         faltam = {i:data['utilizadores'][i] for i in utilizadores_comuns 
                             if self.following[i]['ultima_mensagem'] > data['utilizadores'][i]}
-        # print(faltam)
+        faltam[self.username] = data['utilizadores'][self.username]
+        print(faltam)
 
         # colocar a timeline dos que eu sigo
         timeline_r = [i for i in self.following_timeline 
                         if i['utilizador'] in faltam.keys()
                         and faltam[i['utilizador']] < i['id']]
         
+        print('Passei faltam')
         # colocar a minha timeline, apenas as q já passaram o tempo
+        print(self.my_timeline)
         my_timeline_r = [i for i in self.my_timeline if i['id'] > faltam[self.username]
                                                     and i['timestamp'] > datetime.timestamp(datetime.now())]
 
+        print('Passei minha')
+        print(timeline_r)
         timeline_r.extend(my_timeline_r)
 
         utilizadores = [i for i in utilizadores_comuns]
@@ -124,6 +129,7 @@ class MySocket:
             print('Erro na cria fila')                                                                 # Keeps the user online
             
     def envia(self, mensagem):
+        data = None
         try:
             self.s.connect((self.ip, self.porta))
             self.s.sendall(mensagem.encode('utf-8'))
@@ -137,7 +143,7 @@ class MySocket:
                 if 'e_timeline' in dados.keys():
                     # é resposta de timeline
                     # vamos atualizar os timestamps (e talvez filtrar as q n podiam ser enviadas)
-                    dados['timeline'] = [alteraTimestamp(i,dados['timeline']) for i in dados['timeline'] if i['timestamp'] > dados['timestamp']]
+                    dados['timeline'] = [alteraTimestamp(i,dados['timestamp']) for i in dados['timeline'] if i['timestamp'] > dados['timestamp']]
                     print('Filtrar os que terminam e atualizar a data de término dos outros! Não consideramos tempos de entrega da mensagem!')
                     data = (dados['timeline'],dados['utilizadores'])
                     print(data)

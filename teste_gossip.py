@@ -39,7 +39,7 @@ def testaGossip(lista):
     rondas = 0
     nrMsg = len(envia)
 
-    while(len(chegou) != len(lista)):
+    while(len(listaMensagens) != 0):
         rondas += 1
         novaListaMsg = []
         #if listaMensagens != []:
@@ -53,16 +53,19 @@ def testaGossip(lista):
                     chegou.append(k)
                     #print('C: ', chegou)
                     #print('M: ', v)
-            sel = [i for i in v if i not in enviei[k]]
-            (e,m) = selecionaAleatorio(sel,nrnodos)
-            enviei[k].extend(e)
-            #print('NM: ', m)
-            #print('En: ', e)
-            for i in e:
-                novasMensagens[i] = m
-            novaListaMsg.append(novasMensagens)
-            nrMsg += len(e)
+                    sel = [i for i in v if i not in enviei[k]]
+                    (e,m) = selecionaAleatorio(sel,len(sel))
+                    # print('Selecionei: ', len(e))
+                    enviei[k].extend(e)
+                    #print('NM: ', m)
+                    #print('En: ', e)
+                    for i in e:
+                        novasMensagens[i] = m
+                    novaListaMsg.append(novasMensagens)
+                    nrMsg += len(e)
         listaMensagens = novaListaMsg
+        print('Rondas: ', rondas)
+        print('Chegou: ', len(chegou))
     return (rondas,nrMsg)
 
 def testeGossipMedia(n,tentativas=100):
@@ -79,10 +82,10 @@ def testeGossipMedia(n,tentativas=100):
 
 rondas = []
 msgs = []
-x = [i for i in range(1000000,1000001)]
+x = [i for i in range(10000,10001)]
 for i in x:
     print(i)
-    (r,m) = testeGossipMedia(i,1)
+    (r,m) = testeGossipMedia(i,10)
     rondas.append(r)
     msgs.append(m)
 print('Rondas: ' , rondas)

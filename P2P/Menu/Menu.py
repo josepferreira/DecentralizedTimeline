@@ -21,6 +21,9 @@ class Menu:
     def run(self, option):
         if not option > len(self.items) - 1: 
             return self.items[option-1].execute()
+    
+    def clean(self):
+        self.items = []
 
 def clear():
     for i in range(50):

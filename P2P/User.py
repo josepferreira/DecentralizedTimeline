@@ -1,11 +1,17 @@
-import logging, asyncio, sys, json, socket, functools
-from datetime import datetime
+import logging, asyncio, sys, json, socket, functools, random
+from datetime import datetime, timedelta
 
 from threading import Thread
 
 from kademlia.network import Server
 from Socket.MySocket import MySocket
 from Storage.MyStorage import MyStorage
+
+from Menu.Menu import Menu
+import Menu.Menu as menu
+from Menu.Item import Item
+
+from termcolor import colored
 
 #sys.stderr = open('./erros.txt', 'w')
 
@@ -23,6 +29,7 @@ DEBUG = False#True
 # - Ver a timeline
 # - Pedir para ver outros Users
 
+menu = Menu('Menu')
 queue = asyncio.Queue()
 username = ""
 ip = ""
@@ -35,19 +42,17 @@ following_timeline = []
 server = Server()
 myStorage = None
 
-from Menu.Menu import Menu
-import Menu.Menu as menu
-from Menu.Item import Item
-
 def build_menu():
-    menu = Menu('Menu')
+    global menu
     menu.add_item(Item('1 - Show timeline', mostra_timeline))
     menu.add_item(Item('2 - Follow username', segue_utilizador))
     menu.add_item(Item('3 - Send message', envia_mensagem))
+    menu.add_item(Item('4 - Encontrar utilizadores', encontra_utilizadores))
     menu.add_item(Item('0 - Exit', desconecta))
     return menu
 
-def task(loop, menu):
+def task(loop):
+    global menu
     menu.draw()
     while True:
         msg = yield from queue.get()
@@ -84,7 +89,97 @@ async def build_user_info():
 ##
 #
 
+
+def novoTimestamp():
+    ''' 
+    Função que define o timestamp de uma publicação.
+    O limite será daqi a 12h
+    '''
+    return datetime.timestamp(datetime.now() + timedelta(hours=12))
+
+
+async def encontra_utilizadores_a():
+    '''
+    Função que procura X(=10) utilizadores aleatórios que não sejam seguidores do utilizador atual para lhe mostrar.
+    Primeiro tenta ver os seguidores dos utilizadores que este segue.
+    Depois verifica os dos seus seguidores.
+    Depois vê os seus vizinhos.
+    '''
+    utilizadores = set()
+    encontrados = False
+    a_seguir = [i for i in following.keys()]
+    random.shuffle(a_seguir)
+    for u in a_seguir:
+        info = await server.get(u)
+        info_json = json.loads(info)
+        utilizadores.update([i for i in info_json['followers'] if i != username and i not in a_seguir])
+        if len(utilizadores) > 10:
+            encontrados = True
+            break
+    if encontrados == False:
+        # vai buscar aos meus seguidores
+        my_info = await server.get(username)
+        my_info_json = json.loads(my_info)
+        seguidores = my_info_json['followers'].keys()
+        random.shuffle(seguidores)
+        for u in seguidores:
+            info = await server.get(u)
+            info_json = json.loads(info)
+            utilizadores.update([i for i in info_json['followers'] if i != username and i not in a_seguir])
+            if u not in a_seguir:
+                utilizadores.add(u)
+            if len(utilizadores) > 10:
+                encontrados = True
+                break
+
+        if encontrados == False:
+            print('TEM DE VERIFICAR OS VIZINHOS TBM POIS N ENCONTROU Q CHEGUE')
+    
+    print('--------------Utilizadores-------------')
+    for u in utilizadores:
+        print(colored('-> User: ', 'blue'), u)
+    print('---------------------------------------')
+
+def menu_anterior():
+    '''
+    Limpa o menu atual e volta ao anterior
+    '''
+    global menu
+    menu.clean()
+    build_menu()
+
+def segue_utilizador_encontra_utilizadores():
+    '''
+    Pede para seguir um utilizador e volta ao menu anterior.
+    '''
+    menu_anterior()
+    segue_utilizador()
+
+def cria_menu_encontra_utilizadores():
+    '''
+    Função que altera o menu quando existe um pedido para encontrar utilizadores.
+    A partir daí as 2 opções são: seguir um utilizador ou voltar atrás.
+    '''
+    global menu
+    menu.clean()
+    menu.add_item(Item('1 - Seguir utilizador', segue_utilizador_encontra_utilizadores))
+    menu.add_item(Item('0 - Voltar', menu_anterior))
+
+
+def encontra_utilizadores():
+    '''
+    Faz um pedido para encontrar utilizadores e cria o novo menu.
+    '''
+    global menu
+    cria_menu_encontra_utilizadores()
+    asyncio.ensure_future(encontra_utilizadores_a())
+
+ 
 async def faz_pedido_seguir(idUtilizador):
+    '''
+    Faz um pedido para seguir o utilizador.
+    Dá erro caso o utilizador n exista ou caso já o siga.
+    '''
     utilizador = await server.get(idUtilizador)
 
     if utilizador is None:
@@ -103,6 +198,10 @@ async def faz_pedido_seguir(idUtilizador):
             asyncio.ensure_future(server.set(idUtilizador, json.dumps(json_user)))
 
 def segue_utilizador():
+    '''
+    Função que pergunta qual o utilizador que quer seguir.
+    De seguida realza um pedido para segir esse utilizador.
+    '''
     idUtilizador = input('User Nickname: ')
     idUtilizador = idUtilizador.replace('\n', '')
     if idUtilizador == username:
@@ -115,6 +214,11 @@ def segue_utilizador():
     return False
 
 def ordena_mensagem(a,b):
+    '''
+    Ordena as mensagens segundo os seguintes critérios:
+        - se forem do mesmo utilizador são ordenadas por id
+        - se forem de utilizadores diferentes são ordenadas por timestamp
+    '''
     if a['utilizador'] == b['utilizador']:
         return a['id'] - b['id']
     
@@ -124,9 +228,11 @@ def ordena_mensagem(a,b):
         return -1
     return 0
  
-## depois temos de juntar as timelines
 def mostra_timeline():
-
+    '''
+    Junta as timelines do utilizador e dos que este segue e mostra as mesmas ordenadas.
+    '''
+    global following_timeline
     timeline = [a for a in my_timeline]
     data_atual = datetime.timestamp(datetime.now())
     following_timeline = [i for i in following_timeline if i['timestamp'] > data_atual]
@@ -135,18 +241,20 @@ def mostra_timeline():
     cmp = functools.cmp_to_key(ordena_mensagem)
     timeline.sort(key=cmp)
     # menu.clear()
-    print('*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-TIMELINE*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-')
+    print('============================================TIMELINE============================================')
     for msg in timeline:
         print(msg['utilizador'] + ' - ' + msg['mensagem'])
         print(msg)
-    print('*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-*#-')
+    print('================================================================================================')
     input('Press Enter')
     # menu.clear()
     return False
 
-## Para mandar mensagens
 
 async def escreve_timeline_utilizadores(msg):
+    '''
+    Envia nova publicação para os seguidores do utilizador.
+    '''
     utilizador = await server.get(username)
     seguidores = json.loads(utilizador)
     print('LALALALLALALALALALA\n\n\n\n\n\n\n')
@@ -164,6 +272,9 @@ async def escreve_timeline_utilizadores(msg):
         print('AGORA VEM A PARTE DO FLOODING?')
 
 def utilizador_online(host, port):
+    '''
+    Verifica se um dado utilizador se encontra ativo.
+    '''
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         print('Conectar:',host,porta)
@@ -175,11 +286,14 @@ def utilizador_online(host, port):
         return False
 
 def envia_mensagem():
+    '''
+    Pergunta qual a nova publicação e cria uma tarefa para a enviar para os seguidores.
+    '''
     global ultima_mensagem
-    msg = input('Insert message: ')
+    msg = input('Insira a publicação: ')
     msg = msg.replace('\n','')
     data = datetime.now()
-    mensagem = {'utilizador': username,'mensagem': msg, 'id': ultima_mensagem, 'data':str(data)}
+    mensagem = {'utilizador': username,'mensagem': msg, 'id': ultima_mensagem, 'data':str(data),'timestamp':novoTimestamp()}
     my_timeline.append(mensagem)
     
     #Update da timeline local
@@ -194,7 +308,8 @@ def envia_mensagem():
 
 async def pede_timeline_user(utilizador,faltam):
 
-    """Pede a timeline a um utilizador em especifico
+    """
+    Pede a timeline a um utilizador em especifico
     Envia também quais são os que nos faltam
     Esses têm o id da ultima publicacao que recebemos para que ele nos possa responder.
     com os pubs q tem mais recentes apenas
@@ -305,7 +420,17 @@ def para_thread():
     ms.envia(json.dumps(mensagem))
 
 def guarda_informacoes():
-    pass
+    """
+    Guarda informações localmente
+    """
+    info = {}
+    info['username'] = username
+    info['timeline'] = my_timeline
+    info['following'] = following
+    info['following_timeline'] = following_timeline
+    myStorage.write(info)
+    print("Está tudo guardado em disco")
+
 
 def main(argv):
     print('Saudações')
@@ -337,8 +462,8 @@ def main(argv):
     thread = Thread(target = cria_conexao)
     thread.start()
 
-    m = build_menu()
-    asyncio.ensure_future(task(loop,m))
+    build_menu()
+    asyncio.ensure_future(task(loop))
 
     #utilizador_online('192.168.2.7', 7062)
 
