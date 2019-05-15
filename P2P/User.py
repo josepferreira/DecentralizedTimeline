@@ -10,6 +10,8 @@ from Storage.MyStorage import MyStorage
 from Menu.Menu import Menu
 import Menu.Menu as menu
 from Menu.Item import Item
+import Gossip as gossip
+
 
 from termcolor import colored
 
@@ -90,6 +92,7 @@ async def build_user_info():
 #
 
 
+
 def novoTimestamp():
     ''' 
     Função que define o timestamp de uma publicação.
@@ -136,14 +139,14 @@ async def encontra_utilizadores_a():
         seguidores = my_info_json['followers'].keys()
         random.shuffle(seguidores)
         for u in seguidores:
-            info = await server.get(u)
-            info_json = json.loads(info)
-            utilizadores.update([i for i in info_json['followers'] if i != username and i not in a_seguir])
             if u not in a_seguir:
+                info = await server.get(u)
+                info_json = json.loads(info)
+                utilizadores.update([i for i in info_json['followers'] if i != username and i not in a_seguir])
                 utilizadores.add(u)
-            if len(utilizadores) > 10:
-                encontrados = True
-                break
+                if len(utilizadores) > 10:
+                    encontrados = True
+                    break
 
         if encontrados == False:
             print('TEM DE VERIFICAR OS VIZINHOS TBM POIS N ENCONTROU Q CHEGUE')
@@ -274,31 +277,23 @@ async def escreve_timeline_utilizadores(msg):
     seguidores = json.loads(utilizador)
     print('LALALALLALALALALALA\n\n\n\n\n\n\n')
     print(seguidores)
+   
+    
 
     if seguidores is None:
         print('ERRO: O utilizador ', username, ' não está na DHT ...')
         return
     else:
+        followers = [i for i in seguidores['followers'].items()]
+        envia,faltam = gossip.selecionaAleatorio(followers,len(followers))
         print('Vou apresentar os sguidores: ')
         print(seguidores["followers"])
-        for _,userInfo in seguidores["followers"].items():
+        msg = gossip.cria_mensagem(msg, faltam)
+        msg_json = json.dumps(msg)
+        for _,userInfo in envia:
             ms = MySocket(userInfo[0], userInfo[1])
-            ms.envia(msg)
-        print('AGORA VEM A PARTE DO FLOODING?')
+            ms.envia(msg_json)
 
-def utilizador_online(host, port):
-    '''
-    Verifica se um dado utilizador se encontra ativo.
-    '''
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        print('Conectar:',host,porta)
-        s.connect((host, port))
-        print('Connect feito')
-        return True
-    except:
-        print('TIMEOUT TIMEOUT TIMEOUT!!!')
-        return False
 
 def envia_mensagem():
     '''
@@ -314,10 +309,9 @@ def envia_mensagem():
     #Update da timeline local
 
     print(mensagem)
-    msg_json = json.dumps(mensagem)
-    print('json feito')
+    
     ultima_mensagem += 1
-    asyncio.ensure_future(escreve_timeline_utilizadores(msg_json))
+    asyncio.ensure_future(escreve_timeline_utilizadores(mensagem))
     return False
 
 
@@ -481,7 +475,7 @@ def main(argv):
     asyncio.ensure_future(task(loop))
 
     
-    print('Os nomes dos meus viznhos sao: ', encontra_vizinhos_fisicos())
+    # print('Os nomes dos meus viznhos sao: ', encontra_vizinhos_fisicos())
 
     #utilizador_online('192.168.2.7', 7062)
 

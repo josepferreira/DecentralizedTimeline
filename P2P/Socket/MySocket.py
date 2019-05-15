@@ -1,5 +1,20 @@
 import socket, asyncio, json, sys
+import random, math
 from datetime import datetime, timedelta
+
+def utilizador_online(host, port):
+    '''
+    Verifica se um dado utilizador se encontra ativo.
+    '''
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        print('Conectar:',host,port)
+        s.connect((host, port))
+        print('Connect feito')
+        return True
+    except:
+        print('TIMEOUT TIMEOUT TIMEOUT!!!')
+        return False
 
 def novoTimestamp():
     #vamos guardar 12h
@@ -9,6 +24,33 @@ def alteraTimestamp(elem,t):
     delta = elem['timestamp'] - t
     elem['timestamp'] = datetime.timestamp(datetime.now() + timedelta(seconds=delta))
     return elem
+
+
+
+def selecionaAleatorio(utilizadores,numero_envia):
+    tam = len(utilizadores)
+    k = math.ceil(math.log(numero_envia))#+16 #garante 99.9999887465% de probabilidade de chegar a todos
+    # segundo o artigo do cuckoo
+    if k > tam:
+        k = tam
+    envia = []
+    random.shuffle(utilizadores)
+    quantos = 0
+
+    for (i,v) in utilizadores:
+        #verifica se esta online
+        online = utilizador_online(v[0],v[1])
+        if online:
+            envia.append((i,v))
+            quantos += 1
+            if quantos >= k:
+                break            
+
+    return (envia,[i for i in utilizadores if i not in envia])
+
+def cria_mensagem(mensagem,faltam):
+    mensagem['faltam'] = faltam
+    return mensagem
 
 class MySocket:
 
@@ -89,21 +131,45 @@ class MySocket:
                         resposta = json.dumps(msg).encode('utf-8')
                     else:
                         info['timestamp'] = novoTimestamp()
+                        print('Acrescentar a timeline')
                         self.following_timeline.append(info)
+                        print('Acrescentei')
+                        self.propaga_mensagem(info)
+                        print('Propaguei')
+                        
                         if info['id'] > self.following_timeline[info['utilizador']]['ultima_mensagem']:
                             print('depois ver o caso de se for maior que k+2')
-                            self.following[info['utilizador']]['ultima_mensagem'] = info['id']              
+                            self.following[info['utilizador']]['ultima_mensagem'] = info['id']
+
                 # print(self.following_timeline)
         except: pass
         #timeline.append({'id': info['id'], 'message': info['msg']})
         print(resposta)
         return resposta
 
+
+    def propaga_mensagem(self, mensagem):
+        print("Vou propagar a mensagem" , mensagem)
+        followers = [(i[0],i[1]) for i in mensagem['faltam']]
+        print(followers)
+        envia,faltam = selecionaAleatorio(followers,len(followers))
+        
+        msg = cria_mensagem(mensagem, faltam)
+        msg_json = json.dumps(msg)
+        for _,userInfo in envia:
+            ms = MySocket(userInfo[0], userInfo[1])
+            ms.envia(msg_json)
+
+
     async def processa_pedido(self, client):
         request = None
         #while request != 'quit':
         request = (await self.loop.sock_recv(client, 255)).decode('utf8')
         print('Recebemos: ', request)
+        if request == '' or request is None:
+            print('Recebi nada')
+            client.close()
+            return
         response = self.processa_mensagem(request)
         await self.loop.sock_sendall(client, response)
         client.close()
@@ -114,6 +180,7 @@ class MySocket:
     async def processa_conexoes(self):
         while True:
             client, _ = await self.loop.sock_accept(self.s)
+            print('Recebi conexao')
             self.loop.create_task(self.processa_pedido(client))
 
     def cria_fila(self):
@@ -155,31 +222,32 @@ class MySocket:
             return data
 
 
-    def envia(self, mensagem):
+    def envia(self, mensagem, espera = False):
         data = None
         try:
             self.s.connect((self.ip, self.porta))
             self.s.sendall(mensagem.encode('utf-8'))
             print('Consegui enviar')
-            data = self.s.recv(256)
-            print ('receivedasd "%s"' % data.decode('utf-8'))
-            recebido = data.decode('utf-8')
-            try:
-                dados = json.loads(recebido)
-                print(dados)
-                if 'e_timeline' in dados.keys():
-                    # é resposta de timeline
-                    # vamos atualizar os timestamps (e talvez filtrar as q n podiam ser enviadas)
-                    dados['timeline'] = [alteraTimestamp(i,dados['timestamp']) for i in dados['timeline'] if i['timestamp'] > dados['timestamp']]
-                    print('Filtrar os que terminam e atualizar a data de término dos outros! Não consideramos tempos de entrega da mensagem!')
-                    data = (dados['timeline'],dados['utilizadores'])
-                    print(data)
-            except:
-                pass
-            # if not data.decode('utf-8') == 'ACK':
-            #     info = json.loads(data)
-            #     if info['type'] == 'timeline':
-            #         record_messages(data, timeline)
+            if  espera:
+                data = self.s.recv(256)
+                print ('receivedasd "%s"' % data.decode('utf-8'))
+                recebido = data.decode('utf-8')
+                try:
+                    dados = json.loads(recebido)
+                    print(dados)
+                    if 'e_timeline' in dados.keys():
+                        # é resposta de timeline
+                        # vamos atualizar os timestamps (e talvez filtrar as q n podiam ser enviadas)
+                        dados['timeline'] = [alteraTimestamp(i,dados['timestamp']) for i in dados['timeline'] if i['timestamp'] > dados['timestamp']]
+                        print('Filtrar os que terminam e atualizar a data de término dos outros! Não consideramos tempos de entrega da mensagem!')
+                        data = (dados['timeline'],dados['utilizadores'])
+                        print(data)
+                except:
+                    pass
+                # if not data.decode('utf-8') == 'ACK':
+                #     info = json.loads(data)
+                #     if info['type'] == 'timeline':
+                #         record_messages(data, timeline)
         except:
             print('Utilizador offline')
         finally:
