@@ -1,0 +1,18 @@
+-> Falta guardar o id da mensagem e ignorar a mensagme com um id igual (ze)
+-> quando inicia é preciso alterar o ip na dht (nuno)
+-> de mandar para os vizinhos fisicos (jorge)
+-> quando vai pedir a timeline, pedir aos outros
+
+-> TIRAR AS CENAS DOS GAJOS!! OU ALTERA-LAS
+
+Relatorio:
+
+----> capa (ze)
+----> Indice (nuno e jorge)
+----> Introdução (zé)
+----> Breve discussão e problemas das arquiteturas pensadas antes (Super peer e hierarquia de subscritores) (zé)
+----> O porquê de termos escolhido esta arquitetura => DHT mais gossip por cima (zé)
+        Teste gossip (zé)
+----> Estruturas de dados (zé)
+----> Problemas e soluções futuras(não sei quem é ...)
+----> Conclusão (zé)
