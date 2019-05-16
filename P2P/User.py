@@ -105,7 +105,6 @@ def encontra_vizinhos_fisicos():
         Devolve o nome dos utilizadores dos vizinhos que estao ligados diretamente a ele
     '''
     vizinhos = server.bootstrappable_neighbors()
-    print('Vizinhos: ',vizinhos)
     lista_vizinhos = []
     for (endV, portaV) in vizinhos:
          if portaV != 7060 and portaV != porta:
@@ -132,6 +131,8 @@ async def encontra_utilizadores_a():
         if len(utilizadores) > 10:
             encontrados = True
             break
+
+    seguidores = []
     if encontrados == False:
         # vai buscar aos meus seguidores
         my_info = await server.get(username)
@@ -149,13 +150,27 @@ async def encontra_utilizadores_a():
                     break
 
         if encontrados == False:
-            print('TEM DE VERIFICAR OS VIZINHOS TBM POIS N ENCONTROU Q CHEGUE')
+            # vai buscar os vizinhos fisicos e retira todos os vizinhos fisicos que ele já viu para tras ou que já estão na lista dos utilizadores
+            vizinhos_fisicos = encontra_vizinhos_fisicos()
+            vizinhos_fisicos = [x for x in vizinhos_fisicos if x not in seguidores and x not in utilizadores and x not in a_seguir]
+            for u in vizinhos_fisicos:
+                # como o utilizador nao esta em nenhuma das outras hipoteses podemos adicioná-lo
+                utilizadores.add(u)
+                info = await server.get(u)
+                info_json = json.loads(info)
+                utilizadores.update([i for i in info_json['followers'] if i != username and i not in a_seguir])
+                if len(utilizadores) > 10:
+                    encontrados = True
+                    break
             
 
     
     print('--------------Utilizadores-------------')
-    for u in utilizadores:
-        print(colored('-> User: ', 'blue'), u)
+    if len(utilizadores) == 0:
+        print(colored('Ja conhece todos os utilizadores da rede!', 'red'))
+    else:
+        for u in utilizadores:
+            print(colored('-> User: ', 'blue'), u)
     print('---------------------------------------')
 
 def menu_anterior():
