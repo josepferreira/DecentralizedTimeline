@@ -82,7 +82,14 @@ async def build_user_info():
         print(info)
         print(username)
         asyncio.ensure_future(server.set(username, info))
-    print('Esta feito')
+    else:
+        print("Utilizador existe!!")
+        saved = json.loads(exists)
+        if ip != saved['ip']:
+            #Necessario atualizar ip na dht
+            print("Atualizado IP na DHT")
+            saved['ip'] = ip
+            asyncio.ensure_future(server.set(username, json.dumps(saved)))
 ###########
 #########
 #######
@@ -488,6 +495,10 @@ def main(argv):
 
     build_menu()
     asyncio.ensure_future(task(loop))
+
+    
+
+
 
     
     # print('Os nomes dos meus viznhos sao: ', encontra_vizinhos_fisicos())
