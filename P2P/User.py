@@ -38,6 +38,7 @@ ip = ""
 porta = ""
 following = {} #vai ser um dicionário, a chave é o username e os valores:
                 # ip, porta, ultima mensagem
+mensagens_recebidas = []
 my_timeline = []
 ultima_mensagem = 0
 following_timeline = []
@@ -333,7 +334,8 @@ def envia_mensagem():
     print(mensagem)
     
     ultima_mensagem += 1
-    asyncio.ensure_future(escreve_timeline_utilizadores(mensagem))
+    mensagem_envia = {'info': mensagem}
+    asyncio.ensure_future(escreve_timeline_utilizadores(mensagem_envia))
     return False
 
 

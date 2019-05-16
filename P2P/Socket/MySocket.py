@@ -29,6 +29,9 @@ def alteraTimestamp(elem,t):
 
 def selecionaAleatorio(utilizadores,numero_envia):
     tam = len(utilizadores)
+    if tam == 0:
+        print('Utilizadores vazios')
+        return ([],[])
     k = math.ceil(math.log(numero_envia))#+16 #garante 99.9999887465% de probabilidade de chegar a todos
     # segundo o artigo do cuckoo
     if k > tam:
@@ -55,7 +58,8 @@ def cria_mensagem(mensagem,faltam):
 class MySocket:
 
     def __init__(self, ip, porta, username="",
-                my_timeline=[],following={},following_timeline=[]):
+                my_timeline=[],following={},following_timeline=[],
+                mensagens_recebidas = []):
         self.ip = ip
         self.porta = porta
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,6 +68,7 @@ class MySocket:
         self.following = following
         self.following_timeline = following_timeline
         self.continua = True
+        self.mensagens_recebidas = mensagens_recebidas
 
     def bind(self):
         print('Bind: ',self.ip,self.porta)
@@ -130,16 +135,21 @@ class MySocket:
                         msg = {'utilizador': self.username}
                         resposta = json.dumps(msg).encode('utf-8')
                     else:
-                        info['timestamp'] = novoTimestamp()
-                        print('Acrescentar a timeline')
-                        self.following_timeline.append(info)
-                        print('Acrescentei')
-                        self.propaga_mensagem(info)
-                        print('Propaguei')
                         
-                        if info['id'] > self.following_timeline[info['utilizador']]['ultima_mensagem']:
+                        
+                        if info['id'] > self.following[info['utilizador']]['ultima_mensagem']:
+                            msg = info
+                            info = msg['info']
+                            info['timestamp'] = novoTimestamp()
+                            print('Acrescentar a timeline')
+                            self.following_timeline.append(info)
+                            print('Acrescentei')
+                            print(self.following)
                             print('depois ver o caso de se for maior que k+2')
+                            self.propaga_mensagem(msg)
+                            print('Propaguei')
                             self.following[info['utilizador']]['ultima_mensagem'] = info['id']
+                            print('Atualizei')
 
                 # print(self.following_timeline)
         except: pass

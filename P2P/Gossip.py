@@ -4,6 +4,9 @@ from Socket.MySocket import utilizador_online
 
 def selecionaAleatorio(utilizadores,numero_envia):
     tam = len(utilizadores)
+    if tam == 0:
+        print('Utilizadores vazios')
+        return ([],[])
     k = math.ceil(math.log(numero_envia))#+16 #garante 99.9999887465% de probabilidade de chegar a todos
     # segundo o artigo do cuckoo
     if k > tam:
