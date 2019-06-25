@@ -135,11 +135,9 @@ class MySocket:
                         msg = {'utilizador': self.username}
                         resposta = json.dumps(msg).encode('utf-8')
                     else:
-                        
-                        
-                        if info['id'] > self.following[info['utilizador']]['ultima_mensagem']:
-                            msg = info
-                            info = msg['info']
+                        msg = info
+                        info = msg['info']
+                        if info['id'] > self.following[info['utilizador']]['ultima_mensagem']:                            
                             info['timestamp'] = novoTimestamp()
                             print('Acrescentar a timeline')
                             self.following_timeline.append(info)
